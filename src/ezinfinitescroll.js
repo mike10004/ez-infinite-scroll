@@ -14,7 +14,7 @@
       return value;
     }
 
-    var dbg = false;
+    var dbg = true;
     var trc = dbg;
     var module = ng.module('ezInfiniteScroll', []);
 
@@ -39,7 +39,7 @@
                             if (doMaybeInvoke) {
                                 if (trc) console.log("element got smaller; maybe invoking callback...");
                                 if (angular.isFunction(ezInfiniteScrollCtrl.maybeInvokeCallback)) {
-                                    ezInfiniteScrollCtrl.maybeInvokeCallback(true);
+                                    ezInfiniteScrollCtrl.maybeInvokeCallback(true, 0, scope.rabbitHole);
                                 } else {
                                     if (dbg) console.log("not even trying maybeInvokeCallback because it's not defined in ezInfiniteScrollCtrl", ezInfiniteScrollCtrl);
                                 }
@@ -63,7 +63,7 @@
                     timeThreshold = attr.timeThreshold || 400,
                     promise = null,
                     lastRemaining = 9999;
-                
+
                 var handler = scope.callback;//scope.callbackHolder[scope.callbackName];
 
                 lengthThreshold = parseInt(lengthThreshold, 10);
@@ -81,17 +81,16 @@
                 }
                 scope.rabbitHole = parseInt(scope.rabbitHole);
                 if (trc) console.log('max depth =', scope.rabbitHole);
-                
+
                 function isStopFlagOn() {
                     var yes = toBoolean(scope.stopFlag);
                     if (trc) console.log("isStopFlagOn:", yes, "scope.stopFlag:", scope.stopFlag);
                     return yes;
                 }
 
-                var maybeInvokeCallback = function (doNotRequireScrollDown, depth) {
+                var maybeInvokeCallback = function (doNotRequireScrollDown, depth, maxDepth) {
                     depth = depth || 0;
                     if (trc) console.log("maybeInvokeCallback: at depth = " + depth);
-                    var maxDepth = scope.rabbitHole;
                     if (isStopFlagOn()) {
                         if (dbg) console.log("stop flag is on aborting callback invocation");
                         return;
@@ -117,23 +116,24 @@
                             handler();
                             promise = null;
                             if (depth < maxDepth) {
-                                maybeInvokeCallback(doNotRequireScrollDown, depth + 1);
-                            } else if (trc) console.log("reached max depth", depth, scope.rabbitHole);
+                                if (trc) console.log("depth =", depth, " is less than maxDepth =", maxDepth);
+                                maybeInvokeCallback(doNotRequireScrollDown, depth + 1, maxDepth);
+                            } else if (trc) console.log("reached max depth", maxDepth, "at depth =", depth);
                         }, timeThreshold);
                     }
                 };
                 scope.maybeInvokeCallback = maybeInvokeCallback;
-//                if (trc) console.log('ezInfiniteScroll.link: set scope.maybeInvokeCallback =', 
+//                if (trc) console.log('ezInfiniteScroll.link: set scope.maybeInvokeCallback =',
 //                angular.isFunction(this.maybeInvokeCallback) ? '<function>' : this.maybeInvokeCallback)
                 element.on('scroll', maybeInvokeCallback);
-                maybeInvokeCallback(true); // start it off
+                maybeInvokeCallback(true, 0, scope.rabbitHole); // start it off
             },
             controller: ['$scope', function($scope) {
                 if (trc) console.log('ezInfiniteScroll.controller');
                 var ctrl = this;
                 $scope.$watch('maybeInvokeCallback', function(){
                     ctrl.maybeInvokeCallback = $scope.maybeInvokeCallback;
-                    if (trc) console.log('ezInfiniteScroll.controller: set this.maybeInvokeCallback = ', 
+                    if (trc) console.log('ezInfiniteScroll.controller: set this.maybeInvokeCallback = ',
                         angular.isFunction(ctrl.maybeInvokeCallback) ? '<function>' : ctrl.maybeInvokeCallback);
                 });
 
