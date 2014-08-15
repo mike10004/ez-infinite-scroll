@@ -15,7 +15,7 @@
     }
 
     var dbg = false;
-    var trc = dbg;
+    var trc = false;
     var ATTR_MAX_REPEAT = 'ezMaxRepeat';
     var module = ng.module('ezInfiniteScroll', []);
     var defaultMaxDepth = 10;
@@ -46,7 +46,7 @@
                                 if (angular.isFunction(ezInfiniteScrollCtrl.maybeInvokeCallback)) {
                                     ezInfiniteScrollCtrl.maybeInvokeCallback(true, 0, maxDepth);
                                 }
-                            }
+                             }
                         }, true);
                 }
             }
@@ -88,7 +88,7 @@
                     return yes;
                 }
 
-                var maybeInvokeCallback = function (doNotRequireScrollDown, depth, maxDepth) {
+                var maybeInvokeCallback = function (notFromScrollEvent, depth, maxDepth) {
                     depth = depth || 0;
                     if (trc) console.log("maybeInvokeCallback: at depth "
                         + depth + '; maxDepth ' + maxDepth);
@@ -104,7 +104,7 @@
                     var tmpLastRemaining = lastRemaining;
                     lastRemaining = remaining;
                     if ((remaining < lengthThreshold)
-                        && (doNotRequireScrollDown || ((remaining - tmpLastRemaining) < 0))) {
+                        && (notFromScrollEvent || ((remaining - tmpLastRemaining) < 0))) {
                         // cancel unexpired existing timer
                         if (promise !== null) {
                             $timeout.cancel(promise);
@@ -114,12 +114,12 @@
                                 + ' at depth ' + depth + ' with maxDepth ' + maxDepth);
                             handler();
                             promise = null;
-                            if (depth < maxDepth) {
-                                if (trc) console.log("depth " + depth + " < maxDepth " + maxDepth);
-                                maybeInvokeCallback(doNotRequireScrollDown, depth + 1, maxDepth);
+                            if (notFromScrollEvent && (depth < maxDepth)) {
+                                maybeInvokeCallback(notFromScrollEvent, depth + 1, maxDepth);
                             } else if (dbg) {
-                                console[ng.isUndefined(maxDepth) ? 'info' : 'log']
-                                    ("aborting at depth " + depth + "; maxDepth = " + maxDepth);
+                                console.log("ezInfiniteScroll: not repeating "
+                                + "callback because depth " + depth + " >= maxDepth "
+                                + maxDepth + " or this was a scroll event");
                             }
                         }, timeThreshold);
                         element.on('$destroy', function(){
