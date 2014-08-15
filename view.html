@@ -1,0 +1,34 @@
+<div class="view">
+    <header>
+        <h1>Infinite Scroll (with child height watch)</h1>
+    </header>
+    <nav>
+        <div class="info">
+            <button ng-click="items = []" class="btn btn-default">Purge</button>
+            <label><span class="text">Max items</span><input readonly type="number" ng-model="cap"></label>
+            <label><span class="text">Page size</span><input readonly type="number" ng-model="pageSize"></label>
+            <label><span class="text">Fetch delay</span><input readonly type="number" ng-model="generationDelay"></label>
+            <label><input readonly type="checkbox" ng-model="randomizeColors"><span class="text">Randomize colors</span></label>
+            <span class="count">{{ items.length }} items</span>
+        </div>
+        <div ng-repeat="colorOption in colorOptions" class="color {{colorOption.color}}">
+            <input type="checkbox" ng-model="colorOption.selected"
+                   id="color-{{colorOption.color}}" class="color {{colorOption.color}}">
+            <label for="color-{{colorOption.color}}"
+                   class="color {{colorOption.color}}">
+                <span style="background-color: {{colorOption.color}}">&nbsp;</span>
+            </label>
+        </div>
+    </nav>
+    <div class="main-content" ez-infinite-scroll="fetchNextItems()" id="scrollable-parent" ez-stop-flag="{{noMoreItems}}">
+        <div class="item-list" ez-infinite-child id="scrollable-child">
+            <div ng-repeat="item in items | filter:filters.byColor" class="item {{item.color}}" style="border-color: {{item.color}}">
+                <div>
+                    <div>{{ $index }} </div>
+                    <div>{{ item.index }}</div>
+                    <div class="team">{{ item.team }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
