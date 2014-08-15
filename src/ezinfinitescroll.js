@@ -111,7 +111,7 @@
                         }
                         promise = $timeout(function () {
                             if (dbg) console.log('ezInfiniteScroll: invoking callback'
-                                ' at depth ' + depth + ' with maxDepth ' + maxDepth);
+                                + ' at depth ' + depth + ' with maxDepth ' + maxDepth);
                             handler();
                             promise = null;
                             if (depth < maxDepth) {
