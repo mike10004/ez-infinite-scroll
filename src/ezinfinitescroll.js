@@ -80,7 +80,7 @@
                 }
                 scope.maxDepth = scope.maxDepth || defaultMaxDepth;
                 scope.maxDepth = parseInt(scope.maxDepth, 10);
-                if (trc) console.log('ezInfiniteScroll.link: maxDepth =', scope.maxDepth);
+                if (trc) console.log('ezInfiniteScroll.link: maxDepth', scope.maxDepth);
 
                 function isStopFlagOn() {
                     var yes = toBoolean(scope.stopFlag);
@@ -90,7 +90,8 @@
 
                 var maybeInvokeCallback = function (doNotRequireScrollDown, depth, maxDepth) {
                     depth = depth || 0;
-                    if (trc) console.log("maybeInvokeCallback: at depth = " + depth + '; maxDepth = ' + maxDepth);
+                    if (trc) console.log("maybeInvokeCallback: at depth "
+                        + depth + '; maxDepth ' + maxDepth);
                     if (isStopFlagOn()) {
                         if (dbg) console.log("maybeInvokeCallback: stop flag is on; aborting");
                         return;
@@ -102,19 +103,21 @@
                     //if we have reached the threshold and we scroll down
                     var tmpLastRemaining = lastRemaining;
                     lastRemaining = remaining;
-                    if (remaining < lengthThreshold && (doNotRequireScrollDown || ((remaining - tmpLastRemaining) < 0))) {
+                    if ((remaining < lengthThreshold)
+                        && (doNotRequireScrollDown || ((remaining - tmpLastRemaining) < 0))) {
                         // cancel unexpired existing timer
                         if (promise !== null) {
                             $timeout.cancel(promise);
                         }
                         promise = $timeout(function () {
-                            if (dbg) console.log('invoking callback at depth ' + depth + ' with maxDepth ' + maxDepth);
+                            if (dbg) console.log('ezInfiniteScroll: invoking callback'
+                                ' at depth ' + depth + ' with maxDepth ' + maxDepth);
                             handler();
                             promise = null;
                             if (depth < maxDepth) {
                                 if (trc) console.log("depth " + depth + " < maxDepth " + maxDepth);
                                 maybeInvokeCallback(doNotRequireScrollDown, depth + 1, maxDepth);
-                            } else if (trc) {
+                            } else if (dbg) {
                                 console[ng.isUndefined(maxDepth) ? 'info' : 'log']
                                     ("aborting at depth " + depth + "; maxDepth = " + maxDepth);
                             }
@@ -129,7 +132,7 @@
                 scope.maybeInvokeCallback = maybeInvokeCallback;
                 var maxDepth_ = scope.maxDepth;
                 element.on('scroll', function(){
-                  console[ng.isUndefined(maxDepth_) ? 'warn' : 'log']("scroll event: maxDepth = " + maxDepth_);
+                  if (trc) console.log("scroll event: maxDepth " + maxDepth_);
                   maybeInvokeCallback(false, 0, maxDepth_);
                 });
                 maybeInvokeCallback(true, 0, maxDepth_); // kick it off
