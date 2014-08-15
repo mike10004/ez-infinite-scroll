@@ -14,25 +14,26 @@
       return value;
     }
 
-    var dbg = false;
+    var dbg = true;
     var trc = dbg;
     var module = ng.module('ezInfiniteScroll', []);
 
     module.directive('ezInfiniteChild', [function(){
         return {
-            scope: {
-                rabbitHole: '=' // inherit from parent ezInfiniteScroll scope
-            },
             require: '^ezInfiniteScroll',
             link: {
                 post: function postLink(scope, element, attrs, ezInfiniteScrollCtrl) {
                     if (trc) console.log('ezInfiniteChild.link.postLink; this.id = ' + attrs.id);
                     var maxDepth = element.parent().attr('vdtMaxRepeat');
                     if (dbg) console.log("parent has attribute vdtMaxRepeat = " + maxDepth);
-                    if (angular.isUndefined(maxDepth) || maxDepth === '') {
+                    if (ng.isUndefined(maxDepth) || maxDepth === '') {
                         maxDepth = 10;
                     }
-                    maxDepth = parseInt(maxDepth);
+                    maxDepth = parseInt(maxDepth, 10);
+                    if (ng.isUndefined(maxDepth)) {
+                        console.warn("maxDepth undefined; setting to default");
+                        maxDepth = 10;
+                    }
                     if (trc) console.log("maxDepth = " + maxDepth);
                     var invokeOnSmallerWidth = false, invokeOnSmallerHeight = true;
                     scope.$watch(
@@ -47,7 +48,6 @@
                             var doMaybeInvoke = (invokeOnSmallerHeight && newValue.height < oldValue.height)
                                 || (invokeOnSmallerWidth && newValue.width < oldValue.width);
                             if (doMaybeInvoke) {
-//                                var maxDepth = scope.rabbitHole;
                                 if (trc) console.log("element got smaller; maybe invoking callback with maxDepth = " + maxDepth);
                                 if (angular.isFunction(ezInfiniteScrollCtrl.maybeInvokeCallback)) {
                                     ezInfiniteScrollCtrl.maybeInvokeCallback(true, 0, maxDepth);
@@ -61,20 +61,20 @@
         };
     }]);
 
-    module.directive('ezInfiniteScroll', ['$timeout', function (timeout) {
+    module.directive('ezInfiniteScroll', ['$timeout', function ($timeout) {
 
         return {
             scope: {
                 callback: '&ezInfiniteScroll',
                 stopFlag: '@ezStopFlag',
-                rabbitHole: '@ezMaxRepeat'
+                maxDepth: '@ezMaxRepeat'
             },
             link: function postLink(scope, element, attr) {
                 var lengthThreshold = attr.scrollThreshold || 50,
                     timeThreshold = attr.timeThreshold || 400,
                     promise = null,
                     lastRemaining = 9999;
-                
+
                 var handler = scope.callback;//scope.callbackHolder[scope.callbackName];
 
                 lengthThreshold = parseInt(lengthThreshold, 10);
@@ -86,13 +86,10 @@
                       + 'is defined in parent scope');
                     handler = ng.noop;
                 }
+                scope.maxDepth = scope.maxDepth || 10;
+                scope.maxDepth = parseInt(scope.maxDepth, 10);
+                if (trc) console.log('max depth =', scope.maxDepth);
 
-                if (ng.isUndefined(scope.rabbitHole) || scope.rabbitHole === '') {
-                    scope.rabbitHole = 10;
-                }
-                scope.rabbitHole = parseInt(scope.rabbitHole);
-                if (trc) console.log('max depth =', scope.rabbitHole);
-                
                 function isStopFlagOn() {
                     var yes = toBoolean(scope.stopFlag);
                     if (trc) console.log("isStopFlagOn:", yes, "scope.stopFlag:", scope.stopFlag);
@@ -111,7 +108,7 @@
                     var scrollTop = element[0].scrollTop;
                     var remaining = scrollHeight - (clientHeight + scrollTop);
                     if (dbg) console.log(remaining + " remaining (last = " + lastRemaining
-                            + " scrollHeight = " + scrollHeight + " clientHeight = " 
+                            + " scrollHeight = " + scrollHeight + " clientHeight = "
                             + clientHeight +  " scrollTop = " + scrollTop);
                     //if we have reached the threshold and we scroll down
                     var tmpLastRemaining = lastRemaining;
@@ -120,41 +117,43 @@
                         // if there is already a timer running which has not
                         // expired yet, cancel it and restart the timer
                         if (promise !== null) {
-                            timeout.cancel(promise);
+                            $timeout.cancel(promise);
                         }
-                        promise = timeout(function () {
+                        promise = $timeout(function () {
                             if (dbg) console.log('invoking callback at depth ' + depth + ' with maxDepth ' + maxDepth);
                             handler();
                             promise = null;
                             if (depth < maxDepth) {
-                                if (trc) console.log("depth =", depth, " is less than maxDepth =", maxDepth);
+                                if (trc) console.log("depth " + depth + " < maxDepth " + maxDepth);
                                 maybeInvokeCallback(doNotRequireScrollDown, depth + 1, maxDepth);
-                            } else if (trc) console.log("reached max depth", maxDepth, "at depth =", depth);
+                            } else if (trc) {
+                                console[ng.isUndefined(maxDepth) ? 'info' : 'log']
+                                    ("aborting at depth " + depth + "; maxDepth = " + maxDepth);
+                            }
                         }, timeThreshold);
+                        element.on('$destroy', function(){
+                            if (promise !== null) {
+                                $timeout.cancel(promise);
+                            }
+                        });
                     }
                 };
                 scope.maybeInvokeCallback = maybeInvokeCallback;
-//                if (trc) console.log('ezInfiniteScroll.link: set scope.maybeInvokeCallback =', 
-//                angular.isFunction(this.maybeInvokeCallback) ? '<function>' : this.maybeInvokeCallback)
-                element.on('scroll', maybeInvokeCallback);
-                maybeInvokeCallback(true, 0, scope.rabbitHole); // start it off
+                var maxDepth_ = scope.maxDepth;
+                element.on('scroll', function(){
+                  console[ng.isUndefined(maxDepth_) ? 'warn' : 'log']("scroll event: maxDepth = " + maxDepth_);
+                  maybeInvokeCallback(false, 0, maxDepth_);
+                });
+                maybeInvokeCallback(true, 0, scope.maxDepth); // kick it off
             },
             controller: ['$scope', function($scope) {
                 if (trc) console.log('ezInfiniteScroll.controller');
                 var ctrl = this;
                 $scope.$watch('maybeInvokeCallback', function(){
                     ctrl.maybeInvokeCallback = $scope.maybeInvokeCallback;
-                    if (trc) console.log('ezInfiniteScroll.controller: set this.maybeInvokeCallback = ', 
+                    if (trc) console.log('ezInfiniteScroll.controller: set this.maybeInvokeCallback = ',
                         angular.isFunction(ctrl.maybeInvokeCallback) ? '<function>' : ctrl.maybeInvokeCallback);
                 });
-                var lastMaxDepth;
-                $scope.$watch('rabbitHole', function(newValue, oldValue){
-                    console.log('ezInfiniteScroll.controller: maxDepth = ' + newValue + ' from (' + oldValue + ')');
-                    lastMaxDepth = newValue;
-                });
-                this.getMaxDepth = function() {
-                    return $scope.rabbitHole;
-                };
             }]
         };
     }]);
