@@ -59,14 +59,17 @@
           });
           $scope.pageSize = 5;
           $scope.items = [];
-          $scope.generationDelay = 500;
+          $scope.generationDelay = 1000;
           $scope.cap = 100;
+          $scope.fetching = false;
           $scope.fetchNextItems = function() {
+              $scope.fetching = true;
               var pageSize = $scope.pageSize;
               $timeout(function(){
                 for (var i = 0; i < pageSize && $scope.items.length < $scope.cap; i++) {
                   $scope.items.push(generator.next($scope.randomizeColors));
                 }
+                $scope.fetching = false;
               }, $scope.generationDelay);
               $scope.noMoreItems = $scope.items.length >= $scope.cap;
           };

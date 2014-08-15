@@ -5,11 +5,17 @@
     <nav>
         <div class="info">
             <button ng-click="items = []" class="btn btn-default">Purge</button>
-            <label><span class="text">Max items</span><input readonly type="number" ng-model="cap"></label>
-            <label><span class="text">Page size</span><input readonly type="number" ng-model="pageSize"></label>
-            <label><span class="text">Fetch delay</span><input readonly type="number" ng-model="generationDelay"></label>
+            <label><span class="text">Max items</span><input type="number" ng-model="cap"></label>
+            <label><span class="text">Page size</span><input type="number" ng-model="pageSize"></label>
+            <label><span class="text">Fetch delay</span><input type="number" ng-model="generationDelay"> ms</label>
             <label><input readonly type="checkbox" ng-model="randomizeColors"><span class="text">Randomize colors</span></label>
-            <span class="count">{{ items.length }} items</span>
+            <div class="status">
+              <span class="count">{{ items.length }} items</span>
+              <span class="loading">
+                <img src="ajax-loader.gif" title="Fetching..."
+                    ng-show="fetching">
+              </span>
+            </div>
         </div>
         <div ng-repeat="colorOption in colorOptions" class="color {{colorOption.color}}">
             <input type="checkbox" ng-model="colorOption.selected"
@@ -20,7 +26,8 @@
             </label>
         </div>
     </nav>
-    <div class="main-content" ez-infinite-scroll="fetchNextItems()" id="scrollable-parent" ez-stop-flag="{{noMoreItems}}">
+    <div class="main-content" ez-infinite-scroll="fetchNextItems()"
+          ez-stop-flag="{{noMoreItems}}" ez-on-callback="fetchStarted()">
         <div class="item-list" ez-infinite-child id="scrollable-child">
             <div ng-repeat="item in items | filter:filters.byColor" class="item {{item.color}}" style="border-color: {{item.color}}">
                 <div>
