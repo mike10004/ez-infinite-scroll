@@ -59,7 +59,8 @@
             scope: {
                 callback: '&ezInfiniteScroll',
                 stopFlag: '@ezStopFlag',
-                maxDepth: '@' + ATTR_MAX_REPEAT
+                maxDepth: '@' + ATTR_MAX_REPEAT,
+                maxDepthCallback: '&ezMaxRepeatCallback'
             },
             link: function postLink(scope, element, attr) {
                 var lengthThreshold = attr.scrollThreshold || 50,
@@ -120,6 +121,11 @@
                                 console.log("ezInfiniteScroll: not repeating "
                                 + "callback because depth " + depth + " >= maxDepth "
                                 + maxDepth + " or this was a scroll event");
+                                if (notFromScrollEvent && (depth >= maxDepth)) {
+                                    if (ng.isFunction(scope.maxDepthCallback)) {
+                                        scope.maxDepthCallback();
+                                    }
+                                }
                             }
                         }, timeThreshold);
                         element.on('$destroy', function(){
